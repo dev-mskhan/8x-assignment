@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Capture Response to Agent Log",
+      "trigger": "Stop",
+      "description": "Records the agent's final response for each turn into .agent-logs/.",
+      "action": {
+        "type": "command",
+        "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \".kiro/scripts/capture-response.ps1\""
+      },
+      "timeout": 30,
+      "enabled": true
+    }
+  ]
+}

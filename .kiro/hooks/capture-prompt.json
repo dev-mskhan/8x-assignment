@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Capture Prompt to Agent Log",
+      "trigger": "UserPromptSubmit",
+      "description": "Records each submitted prompt verbatim into .agent-logs/ for session capture.",
+      "action": {
+        "type": "command",
+        "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \".kiro/scripts/capture-prompt.ps1\""
+      },
+      "timeout": 30,
+      "enabled": true
+    }
+  ]
+}

@@ -1,41 +1,184 @@
 {
-  "mode": "yolo",
-  "granularity": "standard",
-  "parallelization": true,
-  "commit_docs": true,
-  "model_profile": "balanced",
-  "workflow": {
-    "research": true,
-    "plan_check": true,
-    "verifier": true,
-    "nyquist_validation": true,
-    "auto_advance": true
+  "project": {
+    "name": "Amazon-Style Marketplace",
+    "type": "modular-monolith",
+    "language": "typescript",
+    "packageManager": "pnpm"
   },
-  "ship": {
-    "pr_body_sections": [
-      {
-        "heading": "User Stories & Acceptance Criteria",
-        "enabled": true,
-        "source": "REQUIREMENTS.md ## v1 Requirements",
-        "fallback": "- Acceptance criteria are covered by the linked requirements and verification evidence."
-      },
-      {
-        "heading": "Risks & Dependencies",
-        "enabled": true,
-        "source": "ROADMAP.md ## Risks || ROADMAP.md ## Dependencies",
-        "fallback": "- No known high-risk rollout dependencies."
-      },
-      {
-        "heading": "Success Metrics & Release Criteria",
-        "enabled": true,
-        "source": "REQUIREMENTS.md ## Traceability || VERIFICATION.md ## Release Criteria",
-        "fallback": "- Release when automated verification and required manual checks pass."
-      },
-      {
-        "heading": "Stakeholder Review & Approval",
-        "enabled": false,
-        "template": "- Product owner approval pending for {phase_name}."
-      }
+
+  "workflow": {
+    "phaseGating": true,
+    "requireExitCriteria": true,
+    "tierEnforcement": {
+      "tier1BuildIn": true,
+      "tier2PhaseGate": true,
+      "tier3PreProduction": true
+    },
+    "agentLogsRequired": true,
+    "commitAfterPhase": true
+  },
+
+  "phases": [
+    { "id": 0, "name": "Capture & Repository Baseline",              "status": "in_progress", "priority": "high" },
+    { "id": 1, "name": "Foundation",                                  "status": "pending",     "priority": "high" },
+    { "id": 2, "name": "Database, Core Domain & Seed Data",           "status": "pending",     "priority": "high" },
+    { "id": 3, "name": "Authentication & Users",                      "status": "pending",     "priority": "high" },
+    { "id": 4, "name": "Catalog, Shopping, Cart & Checkout",          "status": "pending",     "priority": "critical" },
+    { "id": 5, "name": "Seller Marketplace",                          "status": "pending",     "priority": "high" },
+    { "id": 6, "name": "Payments, Fulfillment, Orders & Returns",     "status": "pending",     "priority": "high" },
+    { "id": 7, "name": "Reviews, Notifications & Realtime",           "status": "pending",     "priority": "medium" },
+    { "id": 8, "name": "Search & AI Shopping Assistant",              "status": "pending",     "priority": "medium" },
+    { "id": 9, "name": "Admin, Moderation & Operations",              "status": "pending",     "priority": "medium" },
+    { "id": 10, "name": "Production Hardening, Testing & Security",   "status": "pending",     "priority": "high" },
+    { "id": 11, "name": "Deployment & Launch",                        "status": "pending",     "priority": "critical" }
+  ],
+
+  "stack": {
+    "http": "fastify",
+    "validation": "zod",
+    "orm": "drizzle",
+    "database": "postgresql",
+    "databaseProvider": "neon",
+    "vectorSearch": "pgvector",
+    "jobs": "pgboss",
+    "cache": "redis",
+    "cacheClient": "ioredis",
+    "realtime": "websocket",
+    "logging": "pino",
+    "testing": "vitest",
+    "ai": "openai",
+    "buildTool": "turborepo"
+  },
+
+  "architecture": {
+    "pattern": "modular-monolith",
+    "forbidden": [
+      "kafka",
+      "rabbitmq",
+      "nats",
+      "temporal",
+      "elasticsearch",
+      "opensearch",
+      "separate-vector-db",
+      "separate-websocket-service",
+      "separate-notification-service",
+      "microservices",
+      "api-gateway",
+      "kubernetes",
+      "service-mesh"
+    ],
+    "sourceOfTruth": "postgresql",
+    "durableJobs": "pgboss",
+    "cacheOnly": "redis",
+    "liveDelivery": "websocket"
+  },
+
+  "codeRules": {
+    "inspectBeforeCreate": true,
+    "reuseExistingAbstractions": true,
+    "noDuplicateDbClient": true,
+    "noDuplicateRedisClient": true,
+    "noBusinessLogicInRoutes": true,
+    "noBusinessLogicInControllers": true,
+    "noBusinessLogicInRepositories": true,
+    "noBusinessLogicInWorkers": true,
+    "transactionsInServiceLayer": true,
+    "noEmptyBoilerplateFiles": true,
+    "noDirectPgBossCallsOutsideQueue": true
+  },
+
+  "apiContract": {
+    "basePrefix": "/api/v1",
+    "idFormat": "uuid",
+    "dateFormat": "iso8601-utc",
+    "pagination": "cursor",
+    "moneyFormat": "numeric-12-2",
+    "successShape": { "success": true, "data": {} },
+    "errorShape": { "success": false, "error": { "code": "", "message": "", "details": {} } },
+    "idempotencyHeader": "Idempotency-Key",
+    "neverTrustFromClient": [
+      "userId", "sellerId", "role", "price", "stock",
+      "total", "ownership", "permission", "status"
     ]
+  },
+
+  "testing": {
+    "unitTestDir": "tests/unit",
+    "integrationTestDir": "tests/integration",
+    "framework": "vitest",
+    "useRealPostgres": true,
+    "useRealRedis": true,
+    "useRealPgBoss": true,
+    "noSqliteFallback": true,
+    "noMockedDrizzle": true,
+    "noMockedTransactions": true,
+    "isolationStrategy": "runId",
+    "noUnscopedAggregates": true,
+    "noGlobalTruncation": true,
+    "requireBehavioralCoverage": true,
+    "testNamingConvention": "describe-behavior-not-http-status"
+  },
+
+  "logging": {
+    "library": "pino",
+    "structured": true,
+    "redactFields": [
+      "password",
+      "passwordHash",
+      "token",
+      "accessToken",
+      "refreshToken",
+      "sessionSecret",
+      "jwtSecret",
+      "cookieSecret",
+      "authorization",
+      "cookie",
+      "apiKey",
+      "paymentSecret",
+      "webhookSecret",
+      "cardNumber",
+      "cvv"
+    ],
+    "requiredContextFields": ["requestId"],
+    "optionalContextFields": ["userId", "sellerId", "orderId", "productId"]
+  },
+
+  "env": {
+    "validationPackage": "packages/env/src/server.ts",
+    "noDirectProcessEnv": true,
+    "useServerEnv": true
+  },
+
+  "productionReadiness": {
+    "mandatoryChecklist": ".planning/PRODUCTION_CHECKLIST.md",
+    "mandatoryTestingStandard": ".planning/TESTING_CONTEXT.md",
+    "tier1ApplyDuringImplementation": true,
+    "tier2ApplyAtPhaseEnd": true,
+    "tier3ApplyBeforeLaunch": true,
+    "noIntentionalDebt": true
+  },
+
+  "agentBehavior": {
+    "readAgentsMdBeforeAnyChange": true,
+    "readStateBeforeResuming": true,
+    "updateStateAfterPhase": true,
+    "updateAgentLogsAfterPhase": true,
+    "doNotModifyUnrelatedModules": true,
+    "doNotIntroduceNewInfrastructureWithoutJustification": true,
+    "preferExistingUtilities": true,
+    "avoidPrematureAbstractions": true
+  },
+
+  "priorityRule": "If time slips, protect Phase 4 (golden purchase path) → Phase 5 (seller ops) → Phase 11 (public deployment) before anything else.",
+
+  "definitionOfDone": {
+    "publicUrl": true,
+    "strangerCanCompletePurchase": true,
+    "sellerCanOperate": true,
+    "adminCanModerate": true,
+    "aiDegradesgracefully": true,
+    "agentLogsCommitted": true,
+    "repositoryPublic": true,
+    "smokeTestPasses": true
   }
 }

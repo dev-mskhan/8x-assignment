@@ -1,81 +1,377 @@
-# Amazon Clone
+# Amazon-Style Marketplace — Project Context
 
-## What This Is
+## Project Identity
 
-Amazon Clone is a modular monolith e-commerce platform for browsing products, shopping as a customer, selling as a merchant, and managing commerce operations in one backend-driven system. The product is designed for a marketplace flow where customer trust, catalog quality, checkout reliability, and seller operations matter more than ceremony.
+**Name:** Amazon-Style Multi-Seller Marketplace  
+**Type:** Modular Monolith Backend API  
+**Stack:** Fastify + TypeScript + Zod + Drizzle + PostgreSQL/Neon + Redis/ioredis + PgBoss + WebSocket + pgvector + OpenAI + Pino  
+**Package Manager:** pnpm (monorepo with Turborepo)  
+**Testing:** Vitest  
 
-## Core Value
+## Project Objective
 
-Customers can discover, compare, buy, and track products reliably while sellers can list, manage inventory, and fulfill orders without expensive custom infrastructure.
+Build and deploy a **live, credible, end-to-end Amazon-style multi-seller marketplace** that a stranger can open through a public URL, browse and search, inspect products and offers, add products to a cart, authenticate, complete a test/COD checkout, view the resulting order, and inspect its post-purchase state.
 
-## Requirements
+The marketplace must demonstrate:
+- Operational seller workflows
+- Admin/moderation workflows
+- Coherent order and fulfillment lifecycle
+- Durable asynchronous processing
+- Notifications and WebSocket realtime delivery
+- Grounded AI shopping (strictly catalog-grounded)
+- Realistic seeded marketplace data
+- Production-like deployment and verification
 
-### Validated
-
-- ✓ Product catalog and browse experience — existing platform foundation
-- ✓ User and identity flows — foundational auth and session model
-- ✓ Commerce domain architecture — modular monolith patterns defined for orders, payments, catalog, and fulfillment
-
-### Active
-
-- [ ] Customer can sign up and sign in securely
-- [ ] Customer can browse and search a product catalog
-- [ ] Customer can add items to cart and complete checkout
-- [ ] Seller can create and manage listings and inventory
-- [ ] Orders can be placed, tracked, and fulfilled reliably
-- [ ] Payments and state transitions are handled safely and idempotently
-- [ ] Customers can review products and receive notifications
-- [ ] AI-assisted shopping can surface product intent-based recommendations
-- [ ] Admin can monitor marketplace activity and quality
-
-### Out of Scope
-
-- Seller marketplace mobile app — defer to future delivery once web marketplace is stable
-- Multi-region global expansion — out of initial phase scope
-- Real-time chat support for buyers and sellers — better handled after checkout and marketplace basics
-- Full enterprise B2B procurement portal — not required for core marketplace launch
-
-## Context
-
-This project follows the modular monolith foundation in AGENTS.md and focuses on a backend-first marketplace architecture using Fastify, PostgreSQL, Redis, PgBoss, WebSockets, and pgvector. The system is intentionally organized around business modules such as auth, catalog, cart, orders, payments, sellers, fulfillment, reviews, notifications, and AI search rather than feature-level fragmentation.
-
-The repository is being treated as a production-grade Amazon Clone implementation with explicit emphasis on correctness, transactional integrity, performance, and testability. Existing planning documents point to a phased roadmap spanning foundation, database, auth, catalog, checkout, seller operations, payments, notifications, AI shopping, and production hardening.
-
-## Constraints
-
-- **Architecture**: Modular monolith with strong module boundaries — avoids premature microservice sprawl
-- **Data truth**: PostgreSQL remains the durable source of truth for commerce state
-- **Async work**: Background jobs and outbox-driven processing must be reliable and idempotent
-- **Realtime**: Redis Pub/Sub and WebSockets provide live delivery, not durable source-of-truth behavior
-- **Validation**: Zod validation is required at API, env, and external-input boundaries
-- **Testing**: Integration-first backend validation is required for API and business workflows
-
-## Key Decisions
-
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Modular monolith | Keeps architecture simple while preserving business separation | ✓ Good |
-| PostgreSQL as system of record | Commerce data integrity and transactional correctness matter most | ✓ Good |
-| PgBoss for durable async work | Prevents lost side effects during failures and restarts | ✓ Good |
-| WebSockets via Redis Pub/Sub | Provides live order/notification updates without microservice complexity | ✓ Good |
-| AI features within backend domain services | Keeps LLM behavior constrained by domain rules and DB truth | — Pending |
+**Priority rule:** If time slips, protect the **golden customer purchase path, coherent order state, seller listing/operation, and public deployment** before advanced analytics, social login, sophisticated recommendations, or nonessential admin UI.
 
 ---
-*Last updated: 2026-10-05 after initialization*
 
-## Evolution
+## Architecture
 
-This document evolves at phase transitions and milestone boundaries.
+### Core Principle
 
-**After each phase transition** (via `/gsd-transition`):
-1. Requirements invalidated? → Move to Out of Scope with reason
-2. Requirements validated? → Move to Validated with phase reference
-3. New requirements emerged? → Add to Active
-4. Decisions to log? → Add to Key Decisions
-5. "What This Is" still accurate? → Update if drifted
+**Modular monolith.** One backend application organized into strongly separated business modules. No microservices, no Kafka, no RabbitMQ.
 
-**After each milestone** (via `/gsd-complete-milestone`):
-1. Full review of all sections
-2. Core Value check — still the right priority?
-3. Audit Out of Scope — reasons still valid?
-4. Update Context with current state
+### Infrastructure Responsibilities
+
+```
+PostgreSQL   = business truth (durable state)
+PgBoss       = durable asynchronous work
+Redis        = cache + ephemeral realtime fanout
+WebSocket    = live browser delivery
+pgvector     = semantic product retrieval
+AI/LLM       = intent understanding + explanation (NOT source of truth)
+Backend      = validation + authorization + business rules
+```
+
+### Application Processes
+
+**API process** (`apps/server/src/main.ts`):
+- Creates Fastify application
+- Registers plugins, routes, WebSocket handlers
+- Starts HTTP server
+- Graceful shutdown
+
+**Worker process** (`apps/server/src/workers/register-workers.ts`):
+- Starts PgBoss
+- Registers all background workers
+- Processes asynchronous jobs
+- Graceful shutdown
+
+### Module Layering
+
+```
+Routes → Controllers → Services → Repositories → PostgreSQL
+Services → Core infrastructure (db, redis, queue, events)
+```
+
+Rules:
+- Controllers do not call repositories directly
+- Repositories own persistence only (no business rules)
+- Services own business logic
+- Workers call module services (no business policy in workers)
+- Infrastructure never imports business modules
+- Modules never import other module's repositories
+
+---
+
+## Project Structure
+
+```
+project-root/
+├── apps/
+│   └── server/
+│       ├── package.json
+│       ├── Dockerfile
+│       └── src/
+│           ├── main.ts
+│           ├── app/
+│           │   ├── app.ts
+│           │   ├── plugins.ts
+│           │   ├── routes.ts
+│           │   └── websocket.ts
+│           ├── config/
+│           │   └── env.ts
+│           ├── core/
+│           │   ├── db/db.ts
+│           │   ├── redis/
+│           │   │   ├── redis.ts
+│           │   │   └── pubsub.ts
+│           │   ├── queue/
+│           │   │   ├── boss.ts
+│           │   │   ├── jobs.ts
+│           │   │   └── worker.ts
+│           │   ├── events/
+│           │   │   ├── event-bus.ts
+│           │   │   └── outbox.ts
+│           │   ├── errors/
+│           │   │   ├── app-error.ts
+│           │   │   └── error-handler.ts
+│           │   ├── logger/
+│           │   │   └── logger.ts
+│           │   └── utils/
+│           ├── modules/
+│           │   ├── auth/
+│           │   ├── users/
+│           │   ├── catalog/
+│           │   ├── sellers/
+│           │   ├── cart/
+│           │   ├── wishlist/
+│           │   ├── orders/
+│           │   ├── payments/
+│           │   ├── fulfillment/
+│           │   ├── reviews/
+│           │   ├── notifications/
+│           │   ├── search/
+│           │   ├── ai/
+│           │   └── admin/
+│           └── workers/
+│               └── register-workers.ts
+├── packages/
+│   ├── database/
+│   │   └── src/
+│   │       ├── client.ts
+│   │       ├── index.ts
+│   │       └── schema/
+│   │           ├── index.ts
+│   │           ├── auth.schema.ts
+│   │           ├── users.schema.ts
+│   │           ├── catalog.schema.ts
+│   │           ├── commerce.schema.ts
+│   │           ├── fulfillment.schema.ts
+│   │           └── notifications.schema.ts
+│   ├── shared/
+│   │   └── src/
+│   │       ├── types/
+│   │       ├── constants/
+│   │       ├── schemas/
+│   │       └── utils/
+│   └── env/
+│       └── src/
+│           └── server.ts
+├── infra/
+│   └── docker/
+│       ├── postgres/
+│       └── redis/
+├── tests/
+│   ├── unit/
+│   └── integration/
+├── docker-compose.yml
+├── .env.example
+├── package.json
+├── pnpm-workspace.yaml
+├── turbo.json
+└── AGENTS.md
+```
+
+---
+
+## Technology Stack
+
+| Layer         | Technology          | Responsibility                       |
+|---------------|---------------------|--------------------------------------|
+| HTTP          | Fastify             | API server                           |
+| Validation    | Zod                 | Request/env validation               |
+| ORM           | Drizzle ORM         | PostgreSQL access                    |
+| Database      | PostgreSQL / Neon   | Durable application state            |
+| Vector search | pgvector            | Semantic/vector search               |
+| Jobs          | PgBoss              | Durable background processing        |
+| Cache/Realtime| Redis / ioredis     | Cache, rate limiting, Pub/Sub        |
+| Realtime      | WebSocket           | Browser/server live communication    |
+| Logging       | Pino                | Structured application logging       |
+| Testing       | Vitest              | Unit/integration tests               |
+| Package mgr   | pnpm                | Dependency management (monorepo)     |
+| AI            | OpenAI              | Intent extraction + explanation      |
+
+---
+
+## Environment Variables Required
+
+```
+DATABASE_URL
+REDIS_URL
+PG_BOSS_DATABASE_URL
+APP_URL
+CORS_ORIGINS
+SESSION_SECRET / JWT_SECRET
+COOKIE_SECRET
+OPENAI_API_KEY
+EMBEDDING_MODEL
+PAYMENT_PROVIDER
+PAYMENT_SECRET_KEY
+PAYMENT_WEBHOOK_SECRET
+OBJECT_STORAGE_*
+LOG_LEVEL
+```
+
+All environment variables validated through Zod at `packages/env/src/server.ts`.  
+Business modules use `serverEnv.DATABASE_URL` — never `process.env` directly.
+
+---
+
+## API Contract
+
+- Base: `/api/v1`
+- UUIDs for all IDs
+- ISO-8601 UTC dates
+- Cursor pagination for large collections
+- JSON request/response
+- Zod validation on all inputs
+
+**Success response:**
+```json
+{ "success": true, "data": {} }
+```
+
+**Error response:**
+```json
+{
+  "success": false,
+  "error": { "code": "...", "message": "...", "details": {} }
+}
+```
+
+`Idempotency-Key` header required for order/payment-changing requests.
+
+**Never trust from client:** `userId`, `sellerId`, `role`, `price`, `stock`, `total`, `ownership`, `permission`, `status`
+
+---
+
+## Domain Entities
+
+```
+User, Session, Address
+Seller
+Category, Product, ProductVariant
+Cart, CartItem
+Wishlist, WishlistItem
+Order, OrderItem
+Payment
+Shipment
+Review
+Coupon
+Return, ReturnItem
+Notification
+Conversation, Message
+OutboxEvent
+```
+
+Key schema notes:
+- Money: numeric/decimal (never floating point)
+- Product embeddings for pgvector
+- Order/item price snapshots (historical purchase price preserved)
+- Seller ownership on products/variants
+- Order idempotency keys
+- Outbox event state (pending/processing/completed/failed)
+
+---
+
+## Background Jobs
+
+```
+notifications.dispatch
+emails.order-confirmation
+emails.shipment-update
+payments.reconcile
+orders.expire-payment
+catalog.generate-embedding
+search.reindex-product
+images.process
+analytics.record
+```
+
+## Domain Event Types
+
+```
+ORDER_CREATED, ORDER_CONFIRMED, ORDER_CANCELLED
+PAYMENT_SUCCEEDED, PAYMENT_FAILED
+SHIPMENT_CREATED, ORDER_SHIPPED, ORDER_DELIVERED
+RETURN_CREATED, REFUND_COMPLETED
+REVIEW_CREATED
+NOTIFICATION_CREATED, MESSAGE_CREATED
+PRODUCT_PUBLISHED, PRODUCT_UPDATED
+SELLER_APPROVED
+```
+
+---
+
+## Order Lifecycle
+
+```
+CART → CHECKOUT → PAYMENT_PENDING
+     → PAYMENT_SUCCEEDED → CONFIRMED → PROCESSING → SHIPPED → DELIVERED → COMPLETED
+
+PAYMENT_PENDING → PAYMENT_FAILED
+CONFIRMED → CANCELLED
+DELIVERED → RETURN_REQUESTED → RETURN_APPROVED/REJECTED
+         → RETURN_IN_TRANSIT → RETURN_RECEIVED → REFUND_PENDING → REFUNDED
+```
+
+---
+
+## WebSocket Architecture
+
+Redis channels:
+```
+user:{userId}:events
+conversation:{conversationId}:events
+system:events
+```
+
+Event type is inside the payload — not in the channel name.  
+Subscriptions are authorized server-side.  
+In-memory connection registry: `Map<UserId, Set<WebSocket>>`
+
+---
+
+## Testing Architecture
+
+**Unit tests** (`tests/unit/`): Pure deterministic logic — pricing, calculations, state machines, parsers, ranking.
+
+**Integration tests** (`tests/integration/`): Real Fastify + real PostgreSQL + real Redis + real PgBoss. Uses `buildApp()` → `app.ready()` → `app.inject()`. Never bypass auth/validation/serialization.
+
+**Database isolation:** Randomized `runId` per test run. Scoped queries — never unscoped `COUNT(*)`.
+
+---
+
+## Production Readiness Tiers
+
+- **Tier 1 (Build-in):** Applied during every feature — validation, auth, ownership, pagination, transactions, idempotency, secure logging.
+- **Tier 2 (Phase Gate):** After each phase — route review, query plans, EXPLAIN ANALYZE, authorization tests, concurrency tests.
+- **Tier 3 (Pre-production):** Once before launch — load testing, full security review, multi-instance testing.
+
+See `.planning/PRODUCTION_CHECKLIST.md` for full details.
+
+---
+
+## Definition of Done (Launch)
+
+### Customer journey works
+Guest browse → search → product detail → register/login → cart → wishlist → checkout (COD/test) → order confirmation → order tracking → cancellation → return → review → notifications → WebSocket realtime
+
+### Seller journey works
+Apply → profile → create product → variants/offers → publish → inventory → price → view orders → fulfill → ship
+
+### Admin journey works
+Users → sellers (approve/reject) → products (approve/reject) → orders → returns → reviews (moderate)
+
+### AI journey works
+Natural language query → intent extraction → SQL hard filters → pgvector → real catalog products → persisted conversation
+
+### Infrastructure
+Migrations from clean DB → PgBoss retries → outbox protects side effects → graceful shutdown → structured safe logs → health/readiness endpoints
+
+### Production
+Public URL in incognito → realistic demo data → customer/seller/admin demo accounts → checkout works → worker running → realtime works → AI degrades gracefully
+
+---
+
+## Key References
+
+- `AGENTS.md` — Architectural contract (read before any code change)
+- `.planning/PRODUCTION_CHECKLIST.md` — Three-tier production readiness checklist
+- `.planning/TESTING_CONTEXT.md` — Mandatory API integration testing standard
+- `.planning/ROADMAP.md` — Phase structure and sequencing
+- `.planning/REQUIREMENTS.md` — Scoped requirements per phase
+- `.planning/STATE.md` — Current progress and project memory
+- `.agent-logs/` — Agent session logs (committed incrementally)
