@@ -24,7 +24,7 @@
 | 0     | Capture & Repository Baseline            | `completed` | Full monorepo scaffold per AGENTS.md §3. Agent log workflow verified intact.                                                                |
 | 1     | Foundation                               | `completed` | Fastify app, DB/Redis/PgBoss wired, auth primitives, operational endpoints, smoke test, typecheck+lint+build clean.                         |
 | 2     | Database, Core Domain & Seed Data        | `completed` | All 6 schema files, migrations, seed (33 products, 4 orders), catalog module (7 endpoints), Zod shared schemas. typecheck+lint+build clean. |
-| 3     | Authentication & Users                   | `pending`   |                                                                                                                                             |
+| 3     | Authentication & Users                   | `planned`   | PLAN.md written — register/login/refresh/logout/me, password reset, Google OAuth PKCE, addresses, sessions, RBAC, rate limiting.            |
 | 4     | Catalog, Shopping, Cart & Checkout       | `pending`   | **CRITICAL PATH**                                                                                                                           |
 | 5     | Seller Marketplace                       | `pending`   |                                                                                                                                             |
 | 6     | Payments, Fulfillment, Orders & Returns  | `pending`   |                                                                                                                                             |

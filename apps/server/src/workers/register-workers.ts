@@ -20,8 +20,11 @@ import "../load-env";
 import { parseServerEnv } from "@marketplace/env";
 import { initLogger, createLogger } from "../core/logger/logger";
 import { initDb, closeDb } from "../core/db/db";
-import { initBoss, stopBoss } from "../core/queue/boss";
+import { initBoss, stopBoss, getBoss } from "../core/queue/boss";
 import { createOutboxPublisher } from "../core/events/outbox";
+import { registerWorker } from "../core/queue/worker";
+import { AUTH_JOBS, type SendResetEmailPayload } from "../modules/auth/auth.jobs";
+import { sendResetEmail } from "../modules/auth/auth.service";
 
 // Phase 2+: import and register module workers here:
 // import { registerNotificationWorkers } from "../modules/notifications/notifications.workers";
@@ -44,9 +47,21 @@ async function startWorker(): Promise<void> {
   const bossUrl = env.PG_BOSS_DATABASE_URL ?? env.DATABASE_URL;
   await initBoss(bossUrl);
 
-  // ---- 5. Register module workers (Phase 2+) ------------------------------
-  // registerNotificationWorkers(getBoss());
-  // registerCatalogWorkers(getBoss());
+  // ---- 5. Register module workers -----------------------------------------
+  const boss = getBoss();
+
+  // Auth workers
+  registerWorker<SendResetEmailPayload>(
+    boss,
+    { queue: AUTH_JOBS.SEND_RESET_EMAIL, concurrency: 5 },
+    (job) => {
+      sendResetEmail(job.data);
+      return Promise.resolve();
+    },
+  );
+
+  // Phase 4+: registerOrderWorkers(boss);
+  // Phase 7+: registerNotificationWorkers(boss);
 
   // ---- 6. Start outbox publisher ------------------------------------------
   const outbox = createOutboxPublisher();

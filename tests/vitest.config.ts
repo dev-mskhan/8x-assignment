@@ -19,6 +19,10 @@ export default defineConfig({
     setupFiles: [],
     // Separate pools for unit vs integration to avoid port conflicts
     pool: "forks",
+    // Integration tests hit real PostgreSQL/Redis — allow up to 30s per test.
+    // The rate-limit test overrides this with its own 90s timeout.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],

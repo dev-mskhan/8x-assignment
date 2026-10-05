@@ -13,7 +13,7 @@
  *  - passwordHash is never in any response schema
  */
 import { z } from "zod";
-import { uuidSchema } from "./index";
+import { uuidSchema } from "./common.schemas";
 
 // ─────────────────────────────────────────────
 // QUERY PARAM SCHEMAS

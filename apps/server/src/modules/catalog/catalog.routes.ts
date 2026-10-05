@@ -81,7 +81,7 @@ const errorShape = {
 // ROUTE REGISTRATION
 // ─────────────────────────────────────────────
 
-export function catalogRoutes(app: FastifyInstance): void {
+export async function catalogRoutes(app: FastifyInstance): Promise<void> {
   // ── Categories ────────────────────────────────────────────────────────────
 
   app.get(

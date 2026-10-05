@@ -79,6 +79,13 @@ const serverEnvSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
   AUTH_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
+
+  // ---- Google OAuth (optional — OAuth disabled if not set) ---------------
+  GOOGLE_CLIENT_ID:     z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REDIRECT_URI:  z.string().url().optional(),
+  // Base URL of the React frontend — used to construct OAuth callback redirects
+  FRONTEND_URL:         z.string().url().default("http://localhost:3001"),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

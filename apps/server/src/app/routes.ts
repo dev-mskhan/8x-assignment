@@ -26,6 +26,8 @@ import { checkBoss } from "../core/queue/boss";
 import { getPool } from "../core/db/db";
 import { createLogger } from "../core/logger/logger";
 import { catalogRoutes } from "../modules/catalog/catalog.routes";
+import { authRoutes }    from "../modules/auth/auth.routes";
+import { usersRoutes }   from "../modules/users/users.routes";
 
 const logger = createLogger("routes");
 
@@ -270,6 +272,8 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
   // ---- Module routes -------------------------------------------------------
   await app.register(catalogRoutes, { prefix: "/api/v1" });
+  await app.register(authRoutes,  { prefix: "/api/v1" });
+  await app.register(usersRoutes, { prefix: "/api/v1" });
 
   // ---- Catch-all 404 handler -----------------------------------------------
   app.setNotFoundHandler((_req: FastifyRequest, reply: FastifyReply) => {
