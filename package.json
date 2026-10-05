@@ -1,0 +1,27 @@
+{
+  "name": "marketplace",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Amazon-style multi-seller marketplace — modular monolith",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:integration": "turbo run test:integration",
+    "db:generate": "turbo run db:generate --filter=@marketplace/database",
+    "db:migrate": "turbo run db:migrate --filter=@marketplace/database",
+    "db:seed": "turbo run db:seed --filter=@marketplace/database",
+    "clean": "turbo run clean && find . -name 'node_modules' -type d -prune -exec rm -rf {} +"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

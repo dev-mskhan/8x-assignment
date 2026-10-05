@@ -1,0 +1,10 @@
+{
+  "name": "@marketplace/typescript-config",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Shared TypeScript configuration for the marketplace monorepo",
+  "exports": {
+    "./base.json": "./base.json"
+  },
+  "files": ["base.json"]
+}

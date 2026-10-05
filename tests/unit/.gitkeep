@@ -1,0 +1,12 @@
+# Unit tests — added per phase as logic is implemented.
+# See .planning/TESTING_CONTEXT.md for the testing standard.
+#
+# Unit tests cover deterministic, isolated logic:
+#   - price/discount/tax calculations
+#   - order state machine predicates
+#   - pagination utilities
+#   - search query parsing
+#   - AI intent parsing
+#   - ranking logic
+#   - embedding text construction
+#   - pure transformations

@@ -1,0 +1,11 @@
+# Module directories are created per phase — not pre-scaffolded.
+# See AGENTS.md §43: Do not create empty boilerplate files.
+# Phase 1: no modules yet
+# Phase 2: catalog/
+# Phase 3: auth/, users/
+# Phase 4: cart/, wishlist/, orders/
+# Phase 5: sellers/
+# Phase 6: payments/, fulfillment/
+# Phase 7: reviews/, notifications/
+# Phase 8: search/, ai/
+# Phase 9: admin/

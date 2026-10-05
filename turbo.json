@@ -1,0 +1,50 @@
+{
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tsconfig.json", "package.json"],
+      "outputs": ["dist/**"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "persistent": true,
+      "cache": false
+    },
+    "lint": {
+      "dependsOn": ["^lint"],
+      "inputs": ["src/**", "*.ts", "*.js", ".eslintrc*", "eslint.config.*"]
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck"],
+      "inputs": ["src/**", "tsconfig.json", "package.json"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tests/**", "vitest.config.*"],
+      "cache": false
+    },
+    "test:unit": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tests/unit/**", "vitest.config.*"],
+      "cache": false
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tests/integration/**", "vitest.config.*"],
+      "cache": false
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:seed": {
+      "cache": false
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

@@ -1,0 +1,11 @@
+# Integration tests — added per phase as features are implemented.
+# See .planning/TESTING_CONTEXT.md for the testing standard.
+#
+# Integration tests use REAL infrastructure:
+#   - Real PostgreSQL (no SQLite, no mocked Drizzle)
+#   - Real Redis
+#   - Real PgBoss
+#   - Real Fastify via buildApp() + app.inject()
+#
+# Isolation strategy: randomized runId per test run — scoped queries only.
+# Never use unscoped COUNT(*) or global truncation.
