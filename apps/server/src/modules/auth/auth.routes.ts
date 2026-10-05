@@ -11,7 +11,7 @@
  */
 import type { FastifyInstance } from "fastify";
 import { serverEnv } from "@marketplace/env";
-import { requireAuth } from "../../core/auth/hooks";
+import { requireAuth, requireAuthStrict } from "../../core/auth/hooks";
 import {
   registerHandler,
   loginHandler,
@@ -80,7 +80,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     "/auth/logout",
     {
-      preHandler: [requireAuth],
+      preHandler: [requireAuthStrict],
       schema: { tags: ["auth"], summary: "Logout current session" },
     },
     logoutHandler,
@@ -89,7 +89,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     "/auth/logout-all",
     {
-      preHandler: [requireAuth],
+      preHandler: [requireAuthStrict],
       schema: { tags: ["auth"], summary: "Logout all sessions" },
     },
     logoutAllHandler,

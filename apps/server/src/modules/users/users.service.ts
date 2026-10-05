@@ -9,6 +9,7 @@
  *  - Session ownership verified before revocation
  */
 import { createLogger } from "../../core/logger/logger";
+import { invalidateSessionCache } from "../../core/auth/hooks";
 import {
   NotFoundError,
 } from "../../core/errors/app-error";
@@ -142,5 +143,6 @@ export async function revokeMySession(
     // Not found or wrong owner — return 404, not 403 (no existence leak)
     throw new NotFoundError("Session not found");
   }
+  await invalidateSessionCache(sessionId);
   logger.info({ userId, sessionId }, "Session revoked via session manager");
 }

@@ -444,9 +444,9 @@ describe("Phase 3 — Auth & Users integration tests", () => {
 
   describe("POST /api/v1/auth/logout", () => {
     it("revokes the current session — subsequent refresh returns 401", async () => {
-      // The access_token cookie remains valid (JWT stateless) until it expires.
-      // Revocation is enforced at the REFRESH layer — the revoked session row
-      // prevents token rotation. The test verifies this contract.
+      // requireAuth (stateless JWT) still passes on /me after logout — that's by design.
+      // Revocation is immediately enforced on strict routes (requireAuthStrict),
+      // and at the refresh layer. Both are tested here.
       const runId = crypto.randomUUID();
       const { cookies } = await registerUser(app, { runId });
 
@@ -457,13 +457,22 @@ describe("Phase 3 — Auth & Users integration tests", () => {
       });
       expect(logoutRes.statusCode).toBe(200);
 
-      // Refresh must fail — session is revoked
+      // Refresh must fail — session is revoked in DB
       const refreshRes = await app.inject({
         method:  "POST",
         url:     "/api/v1/auth/refresh",
         headers: { cookie: buildCookieHeader(cookies) },
       });
       expect(refreshRes.statusCode).toBe(401);
+
+      // Second logout attempt on the same (now-revoked) session must fail.
+      // /auth/logout uses requireAuthStrict — revoked session cannot call logout again.
+      const secondLogoutRes = await app.inject({
+        method:  "POST",
+        url:     "/api/v1/auth/logout",
+        headers: { cookie: buildCookieHeader(cookies) },
+      });
+      expect(secondLogoutRes.statusCode).toBe(401);
     });
 
     it("returns 401 without credentials", async () => {
@@ -480,12 +489,8 @@ describe("Phase 3 — Auth & Users integration tests", () => {
   // ══════════════════════════════════════════════════════════════════════════
 
   describe("POST /api/v1/auth/logout-all", () => {
-    it("revokes all sessions — subsequent refresh returns 401 on all sessions", async () => {
-      // JWT access tokens remain valid until expiry (stateless design).
-      // Revocation is enforced at the REFRESH layer. After logout-all,
-      // any refresh attempt on any session must fail.
+    it("revokes all sessions — subsequent refresh and strict-auth routes return 401", async () => {
       const runId = crypto.randomUUID();
-      // Two sessions: one from register, one from a second login
       const { cookies: cookies1 } = await registerUser(app, { runId });
       const { cookies: cookies2 } = await loginUser(
         app,
@@ -501,7 +506,7 @@ describe("Phase 3 — Auth & Users integration tests", () => {
       });
       expect(res.statusCode).toBe(200);
 
-      // Both sessions should fail to refresh
+      // Refresh with session 1 must fail
       const refresh1 = await app.inject({
         method:  "POST",
         url:     "/api/v1/auth/refresh",
@@ -509,12 +514,21 @@ describe("Phase 3 — Auth & Users integration tests", () => {
       });
       expect(refresh1.statusCode).toBe(401);
 
+      // Refresh with session 2 must also fail — all sessions revoked
       const refresh2 = await app.inject({
         method:  "POST",
         url:     "/api/v1/auth/refresh",
         headers: { cookie: buildCookieHeader(cookies2) },
       });
       expect(refresh2.statusCode).toBe(401);
+
+      // Session 1 trying to call logout-all again must fail (requireAuthStrict)
+      const logoutAgain = await app.inject({
+        method:  "POST",
+        url:     "/api/v1/auth/logout-all",
+        headers: { cookie: buildCookieHeader(cookies1) },
+      });
+      expect(logoutAgain.statusCode).toBe(401);
     });
 
     it("returns 401 without credentials", async () => {
@@ -1033,7 +1047,7 @@ describe("Phase 3 — Auth & Users integration tests", () => {
           "Password123!",
         );
 
-        // Get session 2's id via the session list from session 1
+        // Get session list from session 1
         const listRes = await app.inject({
           method:  "GET",
           url:     "/api/v1/users/me/sessions",
@@ -1043,11 +1057,11 @@ describe("Phase 3 — Auth & Users integration tests", () => {
         // Find the session that is NOT current for cookies1
         const otherSession = sessions.find((s) => !s.isCurrent);
         if (!otherSession) {
-          // Only one session — skip (nothing to revoke that isn't current)
+          // Only one session — skip
           return;
         }
 
-        // Revoke it from session 1
+        // Revoke session 2 from session 1
         const revokeRes = await app.inject({
           method:  "DELETE",
           url:     `/api/v1/users/me/sessions/${otherSession.id}`,
@@ -1055,13 +1069,21 @@ describe("Phase 3 — Auth & Users integration tests", () => {
         });
         expect(revokeRes.statusCode).toBe(200);
 
-        // Refresh with session 2 should now fail (session revoked)
+        // Refresh with session 2 must fail (session revoked in DB)
         const refreshRes = await app.inject({
           method:  "POST",
           url:     "/api/v1/auth/refresh",
           headers: { cookie: buildCookieHeader(cookies2) },
         });
         expect(refreshRes.statusCode).toBe(401);
+
+        // Session 2 calling logout (requireAuthStrict) must also fail immediately
+        const logoutRes = await app.inject({
+          method:  "POST",
+          url:     "/api/v1/auth/logout",
+          headers: { cookie: buildCookieHeader(cookies2) },
+        });
+        expect(logoutRes.statusCode).toBe(401);
       });
 
       it("returns 404 when revoking another user's session", async () => {

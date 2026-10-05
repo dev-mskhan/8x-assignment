@@ -31,6 +31,7 @@ import {
   verifyRefreshToken,
   verifyAccessToken,
 } from "../../core/auth/jwt";
+import { invalidateSessionCache } from "../../core/auth/hooks";
 import {
   UnauthorizedError,
   ForbiddenError,
@@ -239,6 +240,7 @@ export async function refresh(
   const hashMatch = await verifyPassword(rawRefreshToken, session.refreshTokenHash);
   if (!hashMatch) {
     await revokeSession(session.id);
+    await invalidateSessionCache(session.id);
     logger.warn({ sessionId: session.id, userId: session.userId }, "Refresh token mismatch — session revoked (possible theft)");
     throw new UnauthorizedError("Invalid refresh token");
   }
@@ -261,12 +263,17 @@ export async function refresh(
 
 export async function logout(sessionId: string): Promise<void> {
   await revokeSession(sessionId);
+  await invalidateSessionCache(sessionId);
   logger.info({ sessionId }, "Session revoked (logout)");
 }
 
 export async function logoutAll(userId: string): Promise<void> {
+  // Fetch the active sessions before revoking so we can invalidate each cache key.
+  // revokeAllUserSessions does a bulk UPDATE — we need the IDs first.
+  const activeSessions = await findActiveSessionsByUserId(userId);
   await revokeAllUserSessions(userId);
-  logger.info({ userId }, "All sessions revoked (logout-all)");
+  await Promise.all(activeSessions.map((s) => invalidateSessionCache(s.id)));
+  logger.info({ userId, count: activeSessions.length }, "All sessions revoked (logout-all)");
 }
 
 // ─────────────────────────────────────────────
@@ -326,11 +333,15 @@ export async function resetPassword(input: { token: string; newPassword: string 
 
   // Atomic transaction: update password + mark token used + revoke all sessions
   const db = getDb();
+  const activeSessions = await findActiveSessionsByUserId(record.userId);
   await db.transaction(async () => {
     await updateUserPassword(record.userId, newHash);
     await markResetTokenUsed(record.id);
     await revokeAllUserSessions(record.userId);
   });
+
+  // Invalidate Redis cache for all revoked sessions (best-effort, outside transaction)
+  await Promise.all(activeSessions.map((s) => invalidateSessionCache(s.id)));
 
   logger.info({ userId: record.userId }, "Password reset — all sessions revoked");
 }
