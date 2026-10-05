@@ -9,6 +9,9 @@ import { z } from "zod";
 /** UUID validation */
 export const uuidSchema = z.string().uuid();
 
+// Domain-specific schemas (re-exported for consumers)
+export * from "./catalog.schemas";
+
 /** Cursor pagination query params */
 export const paginationSchema = z.object({
   cursor: z.string().optional(),

@@ -7,32 +7,32 @@
 
 ## Current Status
 
-| Field             | Value                                                              |
-| ----------------- | ------------------------------------------------------------------ |
-| **Current phase** | Phase 2 — Database, Core Domain & Seed Data                        |
-| **Phase status**  | planned — ready for execution                                      |
-| **Last updated**  | 2026-10-05                                                         |
-| **Next action**   | Execute Phase 2 per PLAN.md — start with Chunk A (Drizzle tooling) |
-| **Blocker**       | none                                                               |
+| Field             | Value                                                                                            |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| **Current phase** | Phase 3 — Authentication & Users                                                                 |
+| **Phase status**  | pending — Phase 2 complete, ready to start Phase 3                                               |
+| **Last updated**  | 2026-10-05                                                                                       |
+| **Next action**   | Begin Phase 3 per ROADMAP.md — auth routes (login, register, refresh, logout, Google OAuth PKCE) |
+| **Blocker**       | none                                                                                             |
 
 ---
 
 ## Phase Progress
 
-| Phase | Name                                     | Status      | Notes                                                                                                               |
-| ----- | ---------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------- |
-| 0     | Capture & Repository Baseline            | `completed` | Full monorepo scaffold per AGENTS.md §3. Agent log workflow verified intact.                                        |
-| 1     | Foundation                               | `completed` | Fastify app, DB/Redis/PgBoss wired, auth primitives, operational endpoints, smoke test, typecheck+lint+build clean. |
-| 2     | Database, Core Domain & Seed Data        | `planned`   | PLAN.md written — ready for execution                                                                               |
-| 3     | Authentication & Users                   | `pending`   |                                                                                                                     |
-| 4     | Catalog, Shopping, Cart & Checkout       | `pending`   | **CRITICAL PATH**                                                                                                   |
-| 5     | Seller Marketplace                       | `pending`   |                                                                                                                     |
-| 6     | Payments, Fulfillment, Orders & Returns  | `pending`   |                                                                                                                     |
-| 7     | Reviews, Notifications & Realtime        | `pending`   |                                                                                                                     |
-| 8     | Search & AI Shopping Assistant           | `pending`   |                                                                                                                     |
-| 9     | Admin, Moderation & Operations           | `pending`   |                                                                                                                     |
-| 10    | Production Hardening, Testing & Security | `pending`   |                                                                                                                     |
-| 11    | Deployment & Launch                      | `pending`   |                                                                                                                     |
+| Phase | Name                                     | Status      | Notes                                                                                                                                       |
+| ----- | ---------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | Capture & Repository Baseline            | `completed` | Full monorepo scaffold per AGENTS.md §3. Agent log workflow verified intact.                                                                |
+| 1     | Foundation                               | `completed` | Fastify app, DB/Redis/PgBoss wired, auth primitives, operational endpoints, smoke test, typecheck+lint+build clean.                         |
+| 2     | Database, Core Domain & Seed Data        | `completed` | All 6 schema files, migrations, seed (33 products, 4 orders), catalog module (7 endpoints), Zod shared schemas. typecheck+lint+build clean. |
+| 3     | Authentication & Users                   | `pending`   |                                                                                                                                             |
+| 4     | Catalog, Shopping, Cart & Checkout       | `pending`   | **CRITICAL PATH**                                                                                                                           |
+| 5     | Seller Marketplace                       | `pending`   |                                                                                                                                             |
+| 6     | Payments, Fulfillment, Orders & Returns  | `pending`   |                                                                                                                                             |
+| 7     | Reviews, Notifications & Realtime        | `pending`   |                                                                                                                                             |
+| 8     | Search & AI Shopping Assistant           | `pending`   |                                                                                                                                             |
+| 9     | Admin, Moderation & Operations           | `pending`   |                                                                                                                                             |
+| 10    | Production Hardening, Testing & Security | `pending`   |                                                                                                                                             |
+| 11    | Deployment & Launch                      | `pending`   |                                                                                                                                             |
 
 ---
 
@@ -101,6 +101,71 @@ tests/
 
 Root: package.json, pnpm-workspace.yaml, turbo.json, .env.example, docker-compose.yml
 ```
+
+## What Phase 2 Built
+
+Complete domain model and public catalog API:
+
+```
+packages/database/
+├── drizzle.config.ts                  ← drizzle-kit config pointing to schema barrel
+├── src/migrate.ts                     ← standalone migration runner (pgvector first, then Drizzle)
+├── src/seed.ts                        ← idempotent seed: 5 users, 2 sellers, 11 categories,
+│                                         33 products (w/ variants), 4 orders, 2 reviews, 1 return
+├── migrations/
+│   ├── 0000_vector_extension.sql      ← manual: vector, uuid-ossp, pg_trgm extensions
+│   └── 0001_initial_schema.sql        ← drizzle-kit generated: all 18+ tables
+└── src/schema/
+    ├── auth.schema.ts                 ← UPDATED: added oauth_accounts (Phase 3 PKCE pre-wiring)
+    ├── users.schema.ts                ← NEW: addresses
+    ├── catalog.schema.ts              ← NEW: sellers, categories, products, product_variants
+    │                                     (vector(1536) embedding, HNSW index noted)
+    ├── commerce.schema.ts             ← NEW: carts, cart_items, wishlists, wishlist_items,
+    │                                     orders, order_items, payments, coupons,
+    │                                     returns, return_items, reviews
+    ├── fulfillment.schema.ts          ← NEW: shipments, shipment_tracking
+    ├── notifications.schema.ts        ← NEW: outbox_events, notifications, conversations, messages
+    └── index.ts                       ← UPDATED: exports all 6 domain schema files
+
+apps/server/src/
+├── app/
+│   ├── app.ts                         ← UPDATED: await registerRoutes()
+│   └── routes.ts                      ← UPDATED: registers catalogRoutes at /api/v1
+├── modules/catalog/
+│   ├── catalog.routes.ts              ← NEW: 7 public read-only routes, Zod schemas wired
+│   ├── catalog.controller.ts          ← NEW: thin HTTP boundary, strips undefined before service call
+│   ├── catalog.service.ts             ← NEW: business logic, cursor validation, embedding stripped
+│   └── catalog.repository.ts         ← NEW: Drizzle queries, cursor pagination, price subquery
+└── core/
+    ├── storage/storage.ts             ← NEW: S3/MinIO/R2 object storage abstraction
+    └── logger/logger.ts               ← FIXED: pino transport cast
+
+packages/shared/src/schemas/
+├── catalog.schemas.ts                 ← NEW: Zod schemas for all catalog params + response DTOs
+│                                         (shared between server and future frontend)
+└── index.ts                           ← UPDATED: exports catalog schemas
+```
+
+**Verification gate results (Phase 2):**
+
+- `pnpm typecheck` — ✓ zero errors (4/4 packages)
+- `pnpm lint` — ✓ zero errors
+- `pnpm build` — ✓ dist/ produced without errors (4/4 packages)
+- Migrations: `0000_vector_extension.sql` + `0001_initial_schema.sql` applied
+- Seed: 5 users · 2 sellers · 11 categories · 33 products · 4 orders · 2 reviews · 1 return
+- Catalog endpoints: 7 public routes registered at `/api/v1`
+
+**Key decisions made in Phase 2:**
+
+- `vector(1536)` custom type defined in catalog.schema.ts (drizzle-orm 0.30.x has no built-in vector column)
+- HNSW index SQL noted in schema comment; created in migration SQL directly (drizzle-orm `.using("hnsw")` not supported in 0.30.x)
+- `exactOptionalPropertyTypes: true` — all optional interface properties explicitly typed `T | undefined`; controller uses spread-with-guard pattern to strip undefined before service calls
+- `registerRoutes` made `async` to properly `await app.register(catalogRoutes, ...)`
+- Zod catalog schemas live in `@marketplace/shared` — importable by frontend without coupling to server
+- Seed uses placeholder `zeroEmbedding()` for all products; ASUS ROG G16 gets deterministic `sin()` pattern for Phase 8 demo
+- `storage.ts` added (object storage abstraction for Phase 5 seller image uploads)
+
+---
 
 ## What Phase 1 Built
 
@@ -273,22 +338,22 @@ LOG_LEVEL                  — debug | info | warn | error
 
 ## Module Inventory
 
-| Module        | Directory                | Status      |
-| ------------- | ------------------------ | ----------- |
-| auth          | `modules/auth/`          | not created |
-| users         | `modules/users/`         | not created |
-| catalog       | `modules/catalog/`       | not created |
-| sellers       | `modules/sellers/`       | not created |
-| cart          | `modules/cart/`          | not created |
-| wishlist      | `modules/wishlist/`      | not created |
-| orders        | `modules/orders/`        | not created |
-| payments      | `modules/payments/`      | not created |
-| fulfillment   | `modules/fulfillment/`   | not created |
-| reviews       | `modules/reviews/`       | not created |
-| notifications | `modules/notifications/` | not created |
-| search        | `modules/search/`        | not created |
-| ai            | `modules/ai/`            | not created |
-| admin         | `modules/admin/`         | not created |
+| Module        | Directory                | Status                                               |
+| ------------- | ------------------------ | ---------------------------------------------------- |
+| auth          | `modules/auth/`          | not created                                          |
+| users         | `modules/users/`         | not created                                          |
+| catalog       | `modules/catalog/`       | **created** — 7 public read-only endpoints (Phase 2) |
+| sellers       | `modules/sellers/`       | not created                                          |
+| cart          | `modules/cart/`          | not created                                          |
+| wishlist      | `modules/wishlist/`      | not created                                          |
+| orders        | `modules/orders/`        | not created                                          |
+| payments      | `modules/payments/`      | not created                                          |
+| fulfillment   | `modules/fulfillment/`   | not created                                          |
+| reviews       | `modules/reviews/`       | not created                                          |
+| notifications | `modules/notifications/` | not created                                          |
+| search        | `modules/search/`        | not created                                          |
+| ai            | `modules/ai/`            | not created                                          |
+| admin         | `modules/admin/`         | not created                                          |
 
 ---
 
@@ -344,3 +409,4 @@ After completing any significant work:
 | 2026-10-05 | 0     | Phase 0 complete. Full monorepo scaffold per AGENTS.md §3 created. Agent log workflow verified intact (.agent-logs/ tracked, .kiro/ hooks tracked, gitignore correct). Ready for Phase 1.                                                                                                                                                                                                                               |
 | 2026-10-05 | 1     | Phase 1 complete. Full Foundation layer: Fastify app, DB/Redis/PgBoss wiring, auth primitives (JWT+cookies+hooks), operational endpoints (/health, /ready, /api/v1/meta, /docs), structured Pino logging with redaction, graceful startup/shutdown. Smoke test 4/4. typecheck+lint+build all clean.                                                                                                                     |
 | 2026-10-05 | 2     | Phase 2 PLAN.md written. 15 chunks (A–O): Drizzle tooling, 5 new schema files (users/catalog/commerce/fulfillment/notifications), oauth_accounts addition to auth schema, manual pgvector migration, drizzle-kit generate, seed data (5 users · 2 sellers · 11 categories · 33 products · 4 demo orders), catalog module (8 read-only endpoints), Tier 2 gate. Phase 3 PKCE flow fully documented. Ready for execution. |
+| 2026-10-05 | 2     | Phase 2 complete. All 18+ tables migrated. Drizzle tooling (drizzle.config.ts, migrate.ts). Idempotent seed: 5 users, 2 sellers, 11 categories, 33 products w/ variants, 4 demo orders, 2 reviews, 1 return. Catalog module (7 public routes). Zod catalog schemas in @marketplace/shared (shared server + frontend). Object storage abstraction added. typecheck+lint+build all clean. Ready for Phase 3.              |

@@ -142,7 +142,7 @@ export function initLogger(options?: {
         res: pino.stdSerializers.res,
       },
     },
-    pretty ? buildPrettyTransport() : undefined,
+    pretty ? (buildPrettyTransport() as pino.DestinationStream) : undefined,
   );
 }
 

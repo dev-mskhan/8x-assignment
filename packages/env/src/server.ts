@@ -52,16 +52,21 @@ const serverEnvSchema = z.object({
     .positive()
     .default(300),
 
-  // ---- Object Storage (optional) -----------------------------------------
-  OBJECT_STORAGE_PROVIDER: z
-    .enum(["local", "s3", "gcs", "r2"])
-    .default("local"),
-  OBJECT_STORAGE_BUCKET: z.string().optional(),
-  OBJECT_STORAGE_REGION: z.string().optional(),
-  OBJECT_STORAGE_ACCESS_KEY: z.string().optional(),
-  OBJECT_STORAGE_SECRET_KEY: z.string().optional(),
-  OBJECT_STORAGE_ENDPOINT: z.string().optional(),
-  OBJECT_STORAGE_CDN_URL: z.string().optional(),
+  // ---- Object Storage (S3-compatible) ------------------------------------
+  // Provider: "minio" for local dev, "r2" for Cloudflare R2 in production.
+  // Both use AWS SDK v3 S3 client — only the endpoint/credentials differ.
+  STORAGE_PROVIDER: z.enum(["minio", "r2", "s3"]).default("minio"),
+  STORAGE_ENDPOINT: z.string().url().default("http://localhost:9000"),
+  STORAGE_BUCKET: z.string().default("marketplace"),
+  STORAGE_REGION: z.string().default("us-east-1"),      // R2 uses "auto", S3 uses real region
+  STORAGE_ACCESS_KEY: z.string().default("minioadmin"),
+  STORAGE_SECRET_KEY: z.string().default("minioadmin"),
+  // Public CDN base URL for constructing file URLs returned to clients.
+  // MinIO local: http://localhost:9000/marketplace
+  // R2 production: https://<account>.r2.cloudflarestorage.com/marketplace  (or custom domain)
+  STORAGE_PUBLIC_URL: z.string().url().default("http://localhost:9000/marketplace"),
+  // Max upload size in bytes (default 10 MB)
+  STORAGE_MAX_SIZE_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
 
   // ---- Logging -----------------------------------------------------------
   LOG_LEVEL: z

@@ -25,6 +25,7 @@ import { checkRedis } from "../core/redis/redis";
 import { checkBoss } from "../core/queue/boss";
 import { getPool } from "../core/db/db";
 import { createLogger } from "../core/logger/logger";
+import { catalogRoutes } from "../modules/catalog/catalog.routes";
 
 const logger = createLogger("routes");
 
@@ -58,7 +59,7 @@ const errorResponseJsonSchema = {
 
 // ---- Route registration --------------------------------------------------
 
-export function registerRoutes(app: FastifyInstance): void {
+export async function registerRoutes(app: FastifyInstance): Promise<void> {
   // ---- GET /health --------------------------------------------------------
   // Liveness: always 200 if the process is running.
   // Does NOT check DB or Redis — use /ready for that.
@@ -266,6 +267,9 @@ export function registerRoutes(app: FastifyInstance): void {
       return reply.status(200).send(result);
     },
   );
+
+  // ---- Module routes -------------------------------------------------------
+  await app.register(catalogRoutes, { prefix: "/api/v1" });
 
   // ---- Catch-all 404 handler -----------------------------------------------
   app.setNotFoundHandler((_req: FastifyRequest, reply: FastifyReply) => {

@@ -42,7 +42,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await registerPlugins(app);
 
   // HTTP routes
-  registerRoutes(app);
+  await registerRoutes(app);
 
   // WebSocket (stub for Phase 1, implemented in Phase 7)
   registerWebSocket(app);
