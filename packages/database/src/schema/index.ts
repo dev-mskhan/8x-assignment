@@ -17,7 +17,7 @@
  */
 
 // TODO: Phase 2 — uncomment as schemas are created
-// export * from "./auth.schema";
+export * from "./auth.schema";
 // export * from "./users.schema";
 // export * from "./catalog.schema";
 // export * from "./commerce.schema";

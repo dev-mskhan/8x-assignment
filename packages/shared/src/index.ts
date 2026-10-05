@@ -7,4 +7,5 @@
 export * from "./types/index";
 export * from "./constants/index";
 export * from "./schemas/index";
+export * from "./schemas/api.schemas";
 export * from "./utils/index";

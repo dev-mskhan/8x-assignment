@@ -2,7 +2,12 @@
   "extends": "../../packages/typescript-config/base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDirs": [
+      "src",
+      "../../packages/database/src",
+      "../../packages/env/src",
+      "../../packages/shared/src"
+    ],
     "baseUrl": ".",
     "paths": {
       "@marketplace/database": ["../../packages/database/src/index.ts"],

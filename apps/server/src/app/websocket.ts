@@ -16,7 +16,6 @@
 import type { FastifyInstance } from "fastify";
 
 // TODO: Phase 7 — implement WebSocket handler
-export async function registerWebSocket(app: FastifyInstance): Promise<void> {
+export function registerWebSocket(_app: FastifyInstance): void {
   // Placeholder — WebSocket endpoint registered but not yet implemented
-  void app;
 }

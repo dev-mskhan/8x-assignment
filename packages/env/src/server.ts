@@ -8,9 +8,6 @@
  * Usage:
  *   import { serverEnv } from "@marketplace/env";
  *   const db = initDb(serverEnv.DATABASE_URL);
- *
- * Implemented in Phase 1.
- * This stub exports the schema shape so TypeScript path aliases resolve.
  */
 import { z } from "zod";
 
@@ -84,11 +81,8 @@ export type ServerEnv = z.infer<typeof serverEnvSchema>;
 /**
  * Validates and returns the server environment.
  * Throws a descriptive error if any required variable is missing or invalid.
- *
- * Called once during startup (Phase 1 main.ts).
- * The result is exported as `serverEnv` for use throughout the application.
  */
-function parseServerEnv(): ServerEnv {
+export function parseServerEnv(): ServerEnv {
   const result = serverEnvSchema.safeParse(process.env);
   if (!result.success) {
     const issues = result.error.issues
@@ -101,16 +95,10 @@ function parseServerEnv(): ServerEnv {
   return result.data;
 }
 
-/**
- * Validated server environment.
- * Parsed once at module load time — all variables are available immediately.
- *
- * In tests, set process.env before importing this module, or use the
- * parseServerEnv() function directly.
- */
-// TODO: Phase 1 — uncomment when real startup is implemented:
-// export const serverEnv: ServerEnv = parseServerEnv();
+export { serverEnvSchema };
 
-// Stub for Phase 0 (allows path aliases to resolve without crashing):
-export const serverEnv = {} as ServerEnv;
-export { parseServerEnv, serverEnvSchema };
+/**
+ * Validated server environment — parsed once at module load time.
+ * All variables are available immediately after import.
+ */
+export const serverEnv: ServerEnv = parseServerEnv();

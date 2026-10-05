@@ -7,32 +7,32 @@
 
 ## Current Status
 
-| Field             | Value                                                                                                          |
-| ----------------- | -------------------------------------------------------------------------------------------------------------- |
-| **Current phase** | Phase 1 — Foundation                                                                                           |
-| **Phase status**  | pending                                                                                                        |
-| **Last updated**  | 2026-10-05                                                                                                     |
-| **Next action**   | Execute Phase 1: install dependencies, implement real Fastify app, wire DB/Redis/PgBoss, operational endpoints |
-| **Blocker**       | none                                                                                                           |
+| Field             | Value                                                              |
+| ----------------- | ------------------------------------------------------------------ |
+| **Current phase** | Phase 2 — Database, Core Domain & Seed Data                        |
+| **Phase status**  | planned — ready for execution                                      |
+| **Last updated**  | 2026-10-05                                                         |
+| **Next action**   | Execute Phase 2 per PLAN.md — start with Chunk A (Drizzle tooling) |
+| **Blocker**       | none                                                               |
 
 ---
 
 ## Phase Progress
 
-| Phase | Name                                     | Status      | Notes                                                                        |
-| ----- | ---------------------------------------- | ----------- | ---------------------------------------------------------------------------- |
-| 0     | Capture & Repository Baseline            | `completed` | Full monorepo scaffold per AGENTS.md §3. Agent log workflow verified intact. |
-| 1     | Foundation                               | `pending`   |                                                                              |
-| 2     | Database, Core Domain & Seed Data        | `pending`   |                                                                              |
-| 3     | Authentication & Users                   | `pending`   |                                                                              |
-| 4     | Catalog, Shopping, Cart & Checkout       | `pending`   | **CRITICAL PATH**                                                            |
-| 5     | Seller Marketplace                       | `pending`   |                                                                              |
-| 6     | Payments, Fulfillment, Orders & Returns  | `pending`   |                                                                              |
-| 7     | Reviews, Notifications & Realtime        | `pending`   |                                                                              |
-| 8     | Search & AI Shopping Assistant           | `pending`   |                                                                              |
-| 9     | Admin, Moderation & Operations           | `pending`   |                                                                              |
-| 10    | Production Hardening, Testing & Security | `pending`   |                                                                              |
-| 11    | Deployment & Launch                      | `pending`   |                                                                              |
+| Phase | Name                                     | Status      | Notes                                                                                                               |
+| ----- | ---------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------- |
+| 0     | Capture & Repository Baseline            | `completed` | Full monorepo scaffold per AGENTS.md §3. Agent log workflow verified intact.                                        |
+| 1     | Foundation                               | `completed` | Fastify app, DB/Redis/PgBoss wired, auth primitives, operational endpoints, smoke test, typecheck+lint+build clean. |
+| 2     | Database, Core Domain & Seed Data        | `planned`   | PLAN.md written — ready for execution                                                                               |
+| 3     | Authentication & Users                   | `pending`   |                                                                                                                     |
+| 4     | Catalog, Shopping, Cart & Checkout       | `pending`   | **CRITICAL PATH**                                                                                                   |
+| 5     | Seller Marketplace                       | `pending`   |                                                                                                                     |
+| 6     | Payments, Fulfillment, Orders & Returns  | `pending`   |                                                                                                                     |
+| 7     | Reviews, Notifications & Realtime        | `pending`   |                                                                                                                     |
+| 8     | Search & AI Shopping Assistant           | `pending`   |                                                                                                                     |
+| 9     | Admin, Moderation & Operations           | `pending`   |                                                                                                                     |
+| 10    | Production Hardening, Testing & Security | `pending`   |                                                                                                                     |
+| 11    | Deployment & Launch                      | `pending`   |                                                                                                                     |
 
 ---
 
@@ -101,6 +101,63 @@ tests/
 
 Root: package.json, pnpm-workspace.yaml, turbo.json, .env.example, docker-compose.yml
 ```
+
+## What Phase 1 Built
+
+Full implementation of the Foundation layer:
+
+```
+apps/server/src/
+├── main.ts                        ← Full startup + graceful shutdown (SIGTERM/SIGINT)
+├── app/
+│   ├── app.ts                     ← buildApp() — Fastify instance, error handler, plugins, routes
+│   ├── plugins.ts                 ← helmet, cors, cookie, rate-limit, swagger, swagger-ui
+│   ├── routes.ts                  ← GET /health, GET /ready, GET /api/v1/meta, 404 handler
+│   └── websocket.ts               ← stub (Phase 7)
+├── core/
+│   ├── auth/
+│   │   ├── jwt.ts                 ← signAccessToken, signRefreshToken, verify* (15m/7d JWTs)
+│   │   ├── cookies.ts             ← setAccessTokenCookie, setRefreshTokenCookie, clearAuthCookies
+│   │   ├── context.ts             ← AuthenticatedUser type + Fastify request.user augmentation
+│   │   ├── hooks.ts               ← requireAuth (cookie → Bearer fallback), requireRole factory
+│   │   └── password.ts            ← hashPassword (bcrypt 12 rounds), verifyPassword
+│   ├── db/db.ts                   ← initDb, getDb, getPool, closeDb (pg.Pool + Drizzle)
+│   ├── redis/redis.ts             ← initRedis, getRedis, getSubscriber, closeRedis, checkRedis
+│   ├── queue/boss.ts              ← initBoss, getBoss, stopBoss, checkBoss (PgBoss)
+│   ├── queue/jobs.ts              ← sendJob() central dispatch abstraction
+│   ├── events/outbox.ts           ← createOutboxPublisher() — polls outbox_events, safe no-op Phase 1
+│   ├── errors/error-handler.ts    ← Global Fastify error handler (AppError, ZodError, 500)
+│   └── logger/logger.ts           ← initLogger, createLogger, getRootLogger (Pino + redaction)
+└── workers/register-workers.ts    ← Worker process entry, graceful shutdown
+
+packages/
+├── typescript-config/base.json    ← Changed NodeNext → CommonJS+node for monorepo compat
+├── env/src/server.ts              ← Live Zod parse + serverEnv singleton
+└── database/src/schema/
+    ├── auth.schema.ts             ← users, sessions, password_reset_tokens (Drizzle stubs)
+    └── index.ts                  ← exports auth.schema
+
+tests/
+├── package.json                   ← Added tests/ as workspace package
+├── vitest.config.ts               ← workspace path aliases for @marketplace/*
+└── integration/health.test.ts     ← Smoke test: /health, /api/v1/meta, /ready, 404 (4/4 ✓)
+```
+
+**Verification gate results:**
+
+- `pnpm typecheck` — ✓ zero errors
+- `pnpm lint` — ✓ zero errors
+- `pnpm test` — ✓ 4/4 smoke tests pass
+- `pnpm build` — ✓ dist/ produced without errors
+
+**Key decisions made:**
+
+- TS module system: `CommonJS + node` (changed from `NodeNext`) for pnpm workspace compatibility
+- `rootDirs` (plural) used in server tsconfig to allow workspace `paths` aliases
+- `preHandlerAsyncHookHandler` used for async Fastify hooks (avoids no-misused-promises)
+- Outbox `start()`/`stop()` are synchronous (no await needed)
+
+---
 
 ## What Still Needs to Be Built (added per phase)
 
@@ -237,19 +294,20 @@ LOG_LEVEL                  — debug | info | warn | error
 
 ## Test Coverage Status
 
-| Area                 | Unit | Integration |
-| -------------------- | ---- | ----------- |
-| Auth lifecycle       | —    | —           |
-| Customer ownership   | —    | —           |
-| Seller ownership     | —    | —           |
-| Golden purchase path | —    | —           |
-| Concurrent checkout  | —    | —           |
-| Order state machine  | —    | —           |
-| Payment idempotency  | —    | —           |
-| Outbox + PgBoss      | —    | —           |
-| Notifications + WS   | —    | —           |
-| AI search grounding  | —    | —           |
-| Admin RBAC           | —    | —           |
+| Area                   | Unit | Integration |
+| ---------------------- | ---- | ----------- |
+| Auth lifecycle         | —    | —           |
+| Customer ownership     | —    | —           |
+| Seller ownership       | —    | —           |
+| Golden purchase path   | —    | —           |
+| Concurrent checkout    | —    | —           |
+| Order state machine    | —    | —           |
+| Payment idempotency    | —    | —           |
+| Outbox + PgBoss        | —    | —           |
+| Notifications + WS     | —    | —           |
+| AI search grounding    | —    | —           |
+| Admin RBAC             | —    | —           |
+| App lifecycle / health | —    | ✓ (4 tests) |
 
 ---
 
@@ -280,7 +338,9 @@ After completing any significant work:
 
 ## Changelog
 
-| Date       | Phase | Event                                                                                                                                                                                     |
-| ---------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-05 | —     | Project initialized. Planning artifacts created. Repository baseline inspection complete. No application code exists yet.                                                                 |
-| 2026-10-05 | 0     | Phase 0 complete. Full monorepo scaffold per AGENTS.md §3 created. Agent log workflow verified intact (.agent-logs/ tracked, .kiro/ hooks tracked, gitignore correct). Ready for Phase 1. |
+| Date       | Phase | Event                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-05 | —     | Project initialized. Planning artifacts created. Repository baseline inspection complete. No application code exists yet.                                                                                                                                                                                                                                                                                               |
+| 2026-10-05 | 0     | Phase 0 complete. Full monorepo scaffold per AGENTS.md §3 created. Agent log workflow verified intact (.agent-logs/ tracked, .kiro/ hooks tracked, gitignore correct). Ready for Phase 1.                                                                                                                                                                                                                               |
+| 2026-10-05 | 1     | Phase 1 complete. Full Foundation layer: Fastify app, DB/Redis/PgBoss wiring, auth primitives (JWT+cookies+hooks), operational endpoints (/health, /ready, /api/v1/meta, /docs), structured Pino logging with redaction, graceful startup/shutdown. Smoke test 4/4. typecheck+lint+build all clean.                                                                                                                     |
+| 2026-10-05 | 2     | Phase 2 PLAN.md written. 15 chunks (A–O): Drizzle tooling, 5 new schema files (users/catalog/commerce/fulfillment/notifications), oauth_accounts addition to auth schema, manual pgvector migration, drizzle-kit generate, seed data (5 users · 2 sellers · 11 categories · 33 products · 4 demo orders), catalog module (8 read-only endpoints), Tier 2 gate. Phase 3 PKCE flow fully documented. Ready for execution. |

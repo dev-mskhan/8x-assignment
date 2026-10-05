@@ -1,22 +1,22 @@
 {
-  "name": "@marketplace/env",
-  "version": "0.0.1",
-  "private": true,
-  "description": "Zod-validated environment configuration for the marketplace server",
-  "main": "src/server.ts",
-  "exports": {
-    ".": "./src/server.ts"
-  },
-  "scripts": {
-    "typecheck": "tsc --noEmit",
-    "build": "tsc --project tsconfig.json",
-    "clean": "rm -rf dist"
-  },
-  "dependencies": {
-    "zod": "^3.23.0"
-  },
-  "devDependencies": {
-    "@marketplace/typescript-config": "workspace:*",
-    "typescript": "^5.4.0"
-  }
+    "name":  "@marketplace/env",
+    "version":  "0.0.1",
+    "private":  true,
+    "description":  "Zod-validated environment configuration for the marketplace server",
+    "main":  "src/server.ts",
+    "exports":  {
+                    ".":  "./src/server.ts"
+                },
+    "scripts":  {
+                    "typecheck":  "tsc --noEmit",
+                    "build":  "tsc --project tsconfig.json",
+                    "clean":  "rm -rf dist"
+                },
+    "dependencies":  {
+                         "zod":  "^3.23.0"
+                     },
+    "devDependencies":  {
+                            "@marketplace/typescript-config":  "workspace:*",
+                            "typescript":  "^5.4.0"
+                        }
 }

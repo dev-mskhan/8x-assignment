@@ -1,0 +1,22 @@
+{
+  "name": "@marketplace/tests",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Integration and unit tests for the marketplace",
+  "scripts": {
+    "test": "vitest run --config vitest.config.ts",
+    "test:unit": "vitest run --config vitest.config.ts tests/unit",
+    "test:integration": "vitest run --config vitest.config.ts tests/integration",
+    "test:watch": "vitest --config vitest.config.ts"
+  },
+  "devDependencies": {
+    "@marketplace/database": "workspace:*",
+    "@marketplace/env": "workspace:*",
+    "@marketplace/server": "workspace:*",
+    "@marketplace/shared": "workspace:*",
+    "@marketplace/typescript-config": "workspace:*",
+    "@types/node": "^20.0.0",
+    "fastify": "^4.28.0",
+    "vitest": "^1.6.0"
+  }
+}

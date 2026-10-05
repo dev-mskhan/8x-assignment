@@ -31,7 +31,8 @@ export function createEventBus(): EventBus {
     },
     on(event, handler) {
       if (!handlers.has(event)) handlers.set(event, []);
-      handlers.get(event)!.push(handler as EventHandler);
+      const list = handlers.get(event);
+      if (list) list.push(handler as EventHandler);
     },
     off(event, handler) {
       const list = handlers.get(event);
